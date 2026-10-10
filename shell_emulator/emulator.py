@@ -1,4 +1,4 @@
-"""Stage 3: virtual shell, logging and script execution."""
+"""Stage 4: virtual shell, logging and script execution."""
 from __future__ import annotations
 
 import getpass
@@ -89,7 +89,8 @@ class Emulator:
                 return 0
             cmd, args = parts[0], parts[1:]
             commands = {
-                "ls": self.cmd_ls, "cd": self.cmd_cd,
+                "ls": self.cmd_ls, "cd": self.cmd_cd, "pwd": self.cmd_pwd,
+                "who": self.cmd_who,
                 "exit": self.cmd_exit,
             }
             if cmd not in commands:
@@ -139,6 +140,14 @@ class Emulator:
             raise VFSError(f"cd: {path}: not a directory")
         self.cwd = self.vfs.normalize(path, self.cwd)
         self.env["PWD"] = self.cwd
+
+    def cmd_pwd(self, args: list[str]) -> None:
+        self._arity("pwd", args, 0, 0)
+        self.print(self.cwd)
+
+    def cmd_who(self, args: list[str]) -> None:
+        self._arity("who", args, 0, 0)
+        self.print(f"{self.username}  {self.hostname}")
 
     def cmd_exit(self, args: list[str]) -> None:
         self._arity("exit", args, 0, 0)
