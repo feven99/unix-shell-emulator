@@ -99,3 +99,23 @@ class VirtualFS:
             raise VFSError(f"{destination}: invalid destination")
         parent.children[name] = Node(False, content=src.content)
         return dst_path
+    def rmdir(self, path: str, cwd: str = "/") -> None:
+        full = self.normalize(path, cwd)
+
+        if full == "/":
+            raise VFSError("rmdir: cannot remove root directory")
+
+        if cwd == full or cwd.startswith(full + "/"):
+            raise VFSError("rmdir: cannot remove current directory")
+
+        node = self.get(full)
+
+        if not node.is_dir:
+            raise VFSError(f"rmdir: {path}: not a directory")
+
+        if node.children:
+            raise VFSError(f"rmdir: {path}: directory not empty")
+
+        parent_path, name = posixpath.split(full)
+        parent = self.get(parent_path or "/")
+        del parent.children[name]

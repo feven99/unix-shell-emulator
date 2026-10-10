@@ -1,4 +1,4 @@
-"""Command parser, shell state, JSON logging and script execution."""
+﻿"""Command parser, shell state, JSON logging and script execution."""
 from __future__ import annotations
 
 import getpass
@@ -92,7 +92,7 @@ class Emulator:
             cmd, args = parts[0], parts[1:]
             commands = {
                 "ls": self.cmd_ls, "cd": self.cmd_cd, "pwd": self.cmd_pwd,
-                "who": self.cmd_who, "cp": self.cmd_cp, "md5": self.cmd_md5,
+                "who": self.cmd_who, "cp": self.cmd_cp, "md5": self.cmd_md5, "rmdir": self.cmd_rmdir,
                 "exit": self.cmd_exit,
             }
             if cmd not in commands:
@@ -188,3 +188,11 @@ class Emulator:
                 self.print()
                 continue
             self.execute(line)
+
+    def cmd_rmdir(self, args: list[str]) -> None:
+        self._arity("rmdir", args, 1, 1)
+        self.vfs.rmdir(args[0], self.cwd)
+
+
+
+
