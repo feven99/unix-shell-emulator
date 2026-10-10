@@ -1,5 +1,6 @@
-# Stage 2: prompt, variable expansion, errors, script execution
+# Test configured prompt, environment variables, and logging
+pwd
+ls /
 ls $HOME
-cd /home
-invalid
-exit
+who
+unknown

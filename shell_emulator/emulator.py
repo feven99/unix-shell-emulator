@@ -1,7 +1,8 @@
-"""Stage 4: virtual shell, logging and script execution."""
+"""Command parser, shell state, JSON logging and script execution."""
 from __future__ import annotations
 
 import getpass
+import hashlib
 import json
 import os
 import posixpath
@@ -90,7 +91,7 @@ class Emulator:
             cmd, args = parts[0], parts[1:]
             commands = {
                 "ls": self.cmd_ls, "cd": self.cmd_cd, "pwd": self.cmd_pwd,
-                "who": self.cmd_who,
+                "who": self.cmd_who, "cp": self.cmd_cp, "md5": self.cmd_md5, "rmdir": self.cmd_rmdir,
                 "exit": self.cmd_exit,
             }
             if cmd not in commands:
@@ -149,6 +150,17 @@ class Emulator:
         self._arity("who", args, 0, 0)
         self.print(f"{self.username}  {self.hostname}")
 
+    def cmd_cp(self, args: list[str]) -> None:
+        self._arity("cp", args, 2, 2)
+        self.vfs.copy(args[0], args[1], self.cwd)
+
+    def cmd_md5(self, args: list[str]) -> None:
+        self._arity("md5", args, 1, 1)
+        node = self.vfs.get(args[0], self.cwd)
+        if node.is_dir:
+            raise VFSError(f"md5: {args[0]}: is a directory")
+        self.print(f"{hashlib.md5(node.content).hexdigest()}  {args[0]}")
+
     def cmd_exit(self, args: list[str]) -> None:
         self._arity("exit", args, 0, 0)
         self.running = False
@@ -175,3 +187,7 @@ class Emulator:
                 self.print()
                 continue
             self.execute(line)
+
+    def cmd_rmdir(self, args: list[str]) -> None:
+        self._arity("rmdir", args, 1, 1)
+        self.vfs.rmdir(args[0], self.cwd)

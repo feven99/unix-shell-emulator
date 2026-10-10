@@ -1,9 +1,12 @@
-# Stage 3: XML VFS with nesting, errors and ls/cd
+# Test three levels of directories, VFS errors, and navigation
 ls /
-cd /home/student
+cd home
+pwd
+cd student
 ls
 cd documents
+pwd
 ls
+md5 notes.txt
 cd missing
 cd /home/student/hello.txt
-ls /missing

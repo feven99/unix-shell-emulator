@@ -76,3 +76,47 @@ class VirtualFS:
         if not node.is_dir:
             raise VFSError(f"{self.normalize(path, cwd)}: not a directory")
         return sorted(node.children)
+
+    def copy(self, source: str, destination: str, cwd: str = "/") -> str:
+        src_path = self.normalize(source, cwd)
+        src = self.get(src_path)
+        if src.is_dir:
+            raise VFSError(f"{source}: omitting directory (cp supports files only)")
+        dst_path = self.normalize(destination, cwd)
+        try:
+            dst = self.get(dst_path)
+        except VFSError:
+            dst = None
+        if dst is not None and dst.is_dir:
+            dst_path = self.normalize(posixpath.join(dst_path, posixpath.basename(src_path)))
+        if src_path == dst_path:
+            raise VFSError("source and destination are the same file")
+        parent_path, name = posixpath.split(dst_path)
+        parent = self.get(parent_path or "/")
+        if not parent.is_dir:
+            raise VFSError(f"{parent_path}: not a directory")
+        if dst is not None and not dst.is_dir and dst_path != self.normalize(destination, cwd):
+            raise VFSError(f"{destination}: invalid destination")
+        parent.children[name] = Node(False, content=src.content)
+        return dst_path
+
+    def rmdir(self, path: str, cwd: str = "/") -> None:
+        full = self.normalize(path, cwd)
+
+        if full == "/":
+            raise VFSError("rmdir: cannot remove root directory")
+
+        if cwd == full or cwd.startswith(full + "/"):
+            raise VFSError("rmdir: cannot remove current directory")
+
+        node = self.get(full)
+
+        if not node.is_dir:
+            raise VFSError(f"rmdir: {path}: not a directory")
+
+        if node.children:
+            raise VFSError(f"rmdir: {path}: directory not empty")
+
+        parent_path, name = posixpath.split(full)
+        parent = self.get(parent_path or "/")
+        del parent.children[name]
