@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<vfs>
+  <dir name="home">
+    <dir name="student">
+      <file name="hello.txt" encoding="base64">SGVsbG8gZnJvbSB0aGUgdmlydHVhbCBmaWxlIHN5c3RlbSEK</file>
+      <dir name="documents">
+        <file name="notes.txt" encoding="base64">U3R1ZHkgbm90ZXMK</file>
+      </dir>
+    </dir>
+  </dir>
+  <dir name="etc">
+    <file name="os-release" encoding="base64">TkFNRT1WaXJ0dWFsVV5JWApWRVJTSU9OPTEK</file>
+  </dir>
+  <dir name="tmp" />
+</vfs>

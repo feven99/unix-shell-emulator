@@ -1,11 +1,11 @@
-# Variant 24 — Stage 2 (reconstructed checkpoint)
+# Variant 24 — Stage 3 (reconstructed checkpoint)
 
-Stage 1 plus configurable options `--vfs`, `--prompt`, `--log`, `--script`,
-`--no-repl`. Startup configuration is printed; commands are logged as JSON
-Lines with timestamps and input/output echo. `ls` and `cd` are still stubs.
+Stage 1–2 functionality plus an **in-memory XML virtual filesystem**.
+Binary file contents use Base64, and all operations stay in memory.
+`ls` and `cd` now operate on virtual files and folders, including nested paths.
+`who` and `pwd` are added in Stage 4; `cp` and `rmdir` in Stage 5.
 
-Try: `python main.py --prompt "demo$ " --log commands.jsonl --script scripts/test_config.sh --no-repl`
+Try: `python main.py --vfs data/filesystem.xml --script scripts/test_vfs.sh --no-repl`
 Test: `python -m unittest discover -s tests -v`
 
-**History notice:** Retrospectively reconstructed checkpoint, not original
-chronological development history.
+**History notice:** Retrospectively reconstructed checkpoint.

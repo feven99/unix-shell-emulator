@@ -1,3 +1,4 @@
-"""Stage 1 shell emulator."""
+"""Virtual UNIX-like shell emulator."""
 from .emulator import Emulator
-__all__ = ["Emulator"]
+from .vfs import VirtualFS, VFSError
+__all__ = ["Emulator", "VirtualFS", "VFSError"]

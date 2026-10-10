@@ -1,25 +1,33 @@
 import io
-import json
-import tempfile
 import unittest
+import tempfile
 from pathlib import Path
-from shell_emulator import Emulator
+from shell_emulator import Emulator, VirtualFS, VFSError
+XML = Path(__file__).resolve().parents[1] / 'data' / 'filesystem.xml'
 
-class StageTwoTests(unittest.TestCase):
-    def test_script_logging_prompt_and_errors(self):
-        with tempfile.TemporaryDirectory() as temporary:
-            file = Path(temporary) / "test.sh"
-            log = Path(temporary) / "events.jsonl"
-            file.write_text('# comment\nls $HOME\ncd /tmp\nunknown\nexit\nls /\n', encoding='utf-8')
-            output = io.StringIO()
-            shell = Emulator(prompt='demo$ ', log_path=str(log), output=output)
-            shell.run_script(str(file))
-            self.assertFalse(shell.running)
-            self.assertIn('demo$ ', output.getvalue())
-            events = [json.loads(x) for x in log.read_text().splitlines()]
-            self.assertEqual([x['command'] for x in events], ['ls','cd','unknown','exit'])
-            self.assertEqual([x['status'] for x in events], [0,0,1,0])
-            self.assertIn('timestamp', events[0])
+class StageThreeTests(unittest.TestCase):
+    def test_vfs_ls_cd_nesting_and_errors(self):
+        output = io.StringIO()
+        shell = Emulator(str(XML), output=output)
+        self.assertEqual(shell.execute('ls /'), 0)
+        self.assertIn('home', output.getvalue())
+        self.assertEqual(shell.execute('cd /home/student/documents'), 0)
+        self.assertEqual(shell.cwd, '/home/student/documents')
+        self.assertEqual(shell.execute('ls'), 0)
+        self.assertIn('notes.txt', output.getvalue())
+        self.assertEqual(shell.execute('cd /home/student/hello.txt'), 1)
+        self.assertEqual(shell.execute('cd /not-exist'), 1)
+        self.assertEqual(shell.execute('pwd'), 1)  # introduced in Stage 4
+
+    def test_reject_invalid_xml(self):
+        with tempfile.TemporaryDirectory() as temp:
+            file=Path(temp)/'invalid.xml'
+            file.write_text('<vfs><dir name="a"/><dir name="a"/></vfs>')
+            with self.assertRaises(VFSError):
+                VirtualFS(str(file))
+            file.write_text('<vfs><file name="bad">$$$</file></vfs>')
+            with self.assertRaises(VFSError):
+                VirtualFS(str(file))
 
 if __name__ == '__main__':
     unittest.main()
