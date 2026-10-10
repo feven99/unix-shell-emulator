@@ -1,18 +1,21 @@
-"""Stage 1 (reconstructed): interactive shell with stub commands."""
+"""Stage 2 (reconstructed): configuration, logging and startup scripts."""
 from __future__ import annotations
 import getpass
+import json
 import os
 import re
 import shlex
 import socket
 import sys
+from datetime import datetime, timezone
 from typing import TextIO
 
 VARIABLE = re.compile(r'\$([A-Za-z_][A-Za-z0-9_]*)|\$\{([A-Za-z_][A-Za-z0-9_]*)\}')
 
 
 class Emulator:
-    def __init__(self, output: TextIO | None = None):
+    def __init__(self, vfs_path: str | None = None, prompt: str | None = None,
+                 log_path: str | None = None, output: TextIO | None = None):
         self.username = getpass.getuser()
         self.hostname = socket.gethostname()
         self.output = output or sys.stdout
@@ -20,9 +23,13 @@ class Emulator:
         self.env.setdefault("USER", self.username)
         self.env.setdefault("HOME", os.path.expanduser("~"))
         self.running = True
+        self.vfs_path = vfs_path  # Stage 2 accepts a path; loading comes in Stage 3.
+        self.prompt_template = prompt
+        self.log_path = log_path
+        self.last_status = 0
 
     def prompt(self) -> str:
-        return f"{self.username}@{self.hostname}:~$ "
+        return self.prompt_template if self.prompt_template is not None else f"{self.username}@{self.hostname}:~$ "
 
     def print(self, message: str = "") -> None:
         print(message, file=self.output)
@@ -64,26 +71,43 @@ class Emulator:
         return "".join(result)
 
     def execute(self, line: str) -> int:
+        command, args, status = "", [], 0
         try:
             parts = shlex.split(self._expand(line), posix=True)
+            if not parts:
+                return 0
+            command, args = parts[0], parts[1:]
+            if command == "exit":
+                if args:
+                    raise ValueError("exit: expected 0 arguments")
+                self.running = False
+            elif command in ("ls", "cd"):
+                self.print(f"{command}: stub args={args!r}")
+            else:
+                raise ValueError(f"{command}: command not found")
         except ValueError as exc:
             self.print(f"shell: {exc}")
-            return 1
-        if not parts:
-            return 0
-        command, args = parts[0], parts[1:]
-        if command == "exit":
-            if args:
-                self.print("shell: exit: expected 0 arguments")
-                return 1
-            self.running = False
-        elif command in ("ls", "cd"):
-            # Stage 1: stubs show the parsed arguments; there is no VFS yet.
-            self.print(f"{command}: stub args={args!r}")
-        else:
-            self.print(f"shell: {command}: command not found")
-            return 1
-        return 0
+            status = 1
+        finally:
+            self.last_status = status
+            if command and self.log_path:
+                event = {"timestamp": datetime.now(timezone.utc).isoformat(),
+                         "command": command, "args": args, "raw": line,
+                         "status": status}
+                with open(self.log_path, "a", encoding="utf-8") as log:
+                    log.write(json.dumps(event) + "\n")
+        return status
+
+    def run_script(self, script_path: str) -> None:
+        with open(script_path, encoding="utf-8") as source:
+            for raw in source:
+                line = raw.rstrip("\r\n")
+                if not line.strip() or line.lstrip().startswith("#"):
+                    continue
+                self.print(f"{self.prompt()}{line}")
+                self.execute(line)
+                if not self.running:
+                    break
 
     def repl(self) -> None:
         while self.running:

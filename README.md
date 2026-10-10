@@ -1,10 +1,11 @@
-# Variant 24 — Stage 1 (reconstructed checkpoint)
+# Variant 24 — Stage 2 (reconstructed checkpoint)
 
-Minimal interactive shell prototype. Real OS username and hostname in prompt,
-environment-variable expansion, `ls` and `cd` stubs, and working `exit`.
+Stage 1 plus configurable options `--vfs`, `--prompt`, `--log`, `--script`,
+`--no-repl`. Startup configuration is printed; commands are logged as JSON
+Lines with timestamps and input/output echo. `ls` and `cd` are still stubs.
 
-Run: `python main.py`
+Try: `python main.py --prompt "demo$ " --log commands.jsonl --script scripts/test_config.sh --no-repl`
 Test: `python -m unittest discover -s tests -v`
 
-**History notice:** This is a retrospective reconstruction from a previously
-completed project, not a commit made when the work was originally developed.
+**History notice:** Retrospectively reconstructed checkpoint, not original
+chronological development history.

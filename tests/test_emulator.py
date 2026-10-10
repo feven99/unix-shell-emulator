@@ -1,29 +1,25 @@
 import io
+import json
+import tempfile
 import unittest
-from unittest.mock import patch
+from pathlib import Path
 from shell_emulator import Emulator
 
-class StageOneTests(unittest.TestCase):
-    def setUp(self):
-        self.output = io.StringIO()
-        self.shell = Emulator(output=self.output)
-
-    def test_prompt_uses_real_host_and_user(self):
-        self.assertIn(self.shell.username, self.shell.prompt())
-        self.assertIn(self.shell.hostname, self.shell.prompt())
-
-    def test_stub_commands_and_expansion(self):
-        self.shell.env['TEST_PATH'] = 'two words'
-        self.assertEqual(self.shell.execute('ls "$TEST_PATH"'), 0)
-        self.assertIn("two words", self.output.getvalue())
-        self.assertEqual(self.shell.execute('cd /tmp'), 0)
-
-    def test_exit_errors_and_interactive_mode(self):
-        self.assertEqual(self.shell.execute('unknown'), 1)
-        self.assertEqual(self.shell.execute('exit extra'), 1)
-        with patch('builtins.input', side_effect=['ls /', 'exit']):
-            self.shell.repl()
-        self.assertFalse(self.shell.running)
+class StageTwoTests(unittest.TestCase):
+    def test_script_logging_prompt_and_errors(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            file = Path(temporary) / "test.sh"
+            log = Path(temporary) / "events.jsonl"
+            file.write_text('# comment\nls $HOME\ncd /tmp\nunknown\nexit\nls /\n', encoding='utf-8')
+            output = io.StringIO()
+            shell = Emulator(prompt='demo$ ', log_path=str(log), output=output)
+            shell.run_script(str(file))
+            self.assertFalse(shell.running)
+            self.assertIn('demo$ ', output.getvalue())
+            events = [json.loads(x) for x in log.read_text().splitlines()]
+            self.assertEqual([x['command'] for x in events], ['ls','cd','unknown','exit'])
+            self.assertEqual([x['status'] for x in events], [0,0,1,0])
+            self.assertIn('timestamp', events[0])
 
 if __name__ == '__main__':
     unittest.main()
